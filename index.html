@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>War From Above: Satellite Imagery and Civilian Harm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cover:url(images/cover.jpeg);
+  --accent:#e5533d; --ink:#101418; --dark:#000;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#000;font:400 17px/1.5 "Inter Tight",Arial,Helvetica,sans-serif;color:#fff;-webkit-font-smoothing:antialiased}
+.mono{font:500 .72rem/1.2 "JetBrains Mono",Consolas,monospace;letter-spacing:.05em;text-transform:uppercase}
+[hidden]{display:none!important}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* ===== COVER ===== */
+#cover{background:var(--accent);color:var(--ink)}
+#cover .top{display:flex;justify-content:space-between;gap:16px;padding:14px 4vw;border-bottom:1px solid rgba(16,20,24,.4)}
+#cover .hero{padding:7vh 4vw 6vh}
+#cover h1{margin:0;font-weight:600;letter-spacing:-.045em;line-height:.9}
+#cover h1 .t1{display:block;font-size:clamp(2.6rem,10.5vw,9rem)}
+#cover h1 .t2{display:block;font-weight:400;font-size:clamp(1.4rem,4vw,3.4rem);letter-spacing:-.035em;margin-top:.35em}
+#cover .row{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-top:6vh}
+#cover .q{margin:0;max-width:30em;font-size:1.1rem;line-height:1.45}
+#cover .begin{color:var(--ink);text-decoration:none;border-bottom:1.5px solid var(--ink);padding-bottom:3px;white-space:nowrap}
+#cover .pic{height:72vh;background:#000 var(--cover) center/cover no-repeat}
+
+/* ===== EXHIBITION STAGE: full-screen images ===== */
+#story{position:relative}
+#stage{position:sticky;top:0;height:100vh;overflow:hidden;background:#000}
+#views{position:absolute;inset:0;z-index:1}
+.layer{position:absolute;inset:0;opacity:0;transition:opacity .9s ease;background-position:center;background-repeat:no-repeat;background-size:cover}
+.layer.on{opacity:1}
+.layer.framed{box-shadow:0 0 0 1px var(--accent)}   /* thin red line when the image is shown whole */
+#scrim{position:absolute;inset:0;z-index:3;opacity:0;transition:opacity .6s;pointer-events:none}
+#scrim.mid{opacity:1;background:radial-gradient(ellipse at center,rgba(0,0,0,.62),rgba(0,0,0,.3) 75%)}
+#scrim.bot{opacity:1;background:linear-gradient(0deg,rgba(0,0,0,.78),rgba(0,0,0,0) 55%)}
+
+/* small translucent caption */
+.cap{position:absolute;left:24px;bottom:46px;z-index:6;max-width:min(340px,86vw);padding:14px 18px 16px;background:rgba(8,12,16,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-left:3px solid var(--accent);transition:opacity .25s}
+.cap.out{opacity:0}
+.cap.wide{max-width:min(470px,90vw)}
+#cPart{margin:0 0 8px;color:var(--accent)}
+.cap h2{margin:0;font-weight:600;font-size:1.25rem;line-height:1.15;letter-spacing:-.02em}
+#cBody p{margin:.6em 0 0;font-size:.95rem;color:rgba(255,255,255,.9)}
+#cBody a{color:#fff;text-underline-offset:3px}
+.it{margin:.9em 0 0;padding:0;list-style:none;counter-reset:n}
+.it li{counter-increment:n;opacity:0;transform:translateY(8px);transition:opacity .6s,transform .6s;padding:8px 0 8px 2em;position:relative;border-top:1px solid rgba(255,255,255,.2);font-size:.95rem}
+.it li::before{content:counter(n);position:absolute;left:0;color:var(--accent);font:500 .75rem/1.9 "JetBrains Mono",monospace}
+.it li.on{opacity:1;transform:none}
+.it li b{font-weight:600}
+/* centred statement */
+.cap.mid,.cap.bot{background:none;-webkit-backdrop-filter:none;backdrop-filter:none;border:0;padding:0;text-align:center;left:50%;transform:translateX(-50%);max-width:min(980px,90vw)}
+.cap.mid{top:50%;bottom:auto;transform:translate(-50%,-50%)}
+.cap.mid h2{font-size:clamp(2rem,5.2vw,4.6rem);line-height:1.04;letter-spacing:-.035em;text-shadow:0 2px 24px rgba(0,0,0,.5)}
+.cap.bot{bottom:9vh}
+.cap.bot .it{margin:0}
+.cap.bot .it li{display:inline;padding:0;border:0;font-size:clamp(1.6rem,4.2vw,3.6rem);font-weight:600;letter-spacing:-.03em;line-height:1.1;text-shadow:0 2px 24px rgba(0,0,0,.6)}
+.cap.bot .it li::before{display:none}
+.cap.bot .it li::after{content:" "}
+#credit{position:absolute;left:24px;bottom:12px;z-index:6;margin:0;max-width:none;white-space:nowrap;color:rgba(255,255,255,.7);font:400 .7rem/1.3 "JetBrains Mono",Consolas,monospace}
+#credit a{color:inherit}
+#bar{position:absolute;left:0;top:0;height:3px;background:var(--accent);width:0;z-index:8}
+
+/* before / after slider (sits exactly on the image) */
+#cmp{--p:100%;position:absolute;z-index:2;left:0;top:0;width:100%;height:100%;opacity:0;pointer-events:none;transition:opacity .4s}
+#cmp.show{opacity:1}
+#cmpClip{position:absolute;inset:0;overflow:hidden;clip-path:inset(0 0 0 var(--p))}
+#cmpClip .layer{opacity:1;transition:none}
+#cmpLine{position:absolute;top:0;bottom:0;left:var(--p);width:3px;margin-left:-1px;background:#fff}
+#cmpHandle{position:absolute;top:50%;left:clamp(26px,var(--p),calc(100% - 26px));width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;background:var(--accent);border:3px solid #fff;color:#fff;font:700 18px/42px Arial,sans-serif;text-align:center;cursor:ew-resize;touch-action:none;pointer-events:none}
+#cmp.show #cmpHandle{pointer-events:auto}
+.ctag{position:absolute;top:14px;background:#fff;color:var(--ink);font:500 .7rem/1 "JetBrains Mono",Consolas,monospace;letter-spacing:.04em;text-transform:uppercase;padding:7px 10px;transition:opacity .4s}
+#tagB.hid,#tagH.hid{opacity:0}
+#tagH{top:calc(50% + 36px);right:14px;background:var(--accent);color:#fff}
+
+/* Forensic Architecture range scene */
+#fa{position:absolute;inset:0;z-index:4;background:#000;display:flex;flex-direction:column;justify-content:center;gap:4vh;padding:6vh 4vw;opacity:0;pointer-events:none;transition:opacity .7s}
+#fa.show{opacity:1}
+#fa .tiles{display:flex;gap:14px;height:56vh}
+#fa .tile{flex:1;position:relative;background:#10161b var(--img) center/cover no-repeat;opacity:0;transform:translateY(24px);transition:opacity .8s,transform .8s}
+#fa .tile.on{opacity:1;transform:none}
+#fa .tile b{position:absolute;left:0;right:0;bottom:0;padding:26px 14px 10px;background:linear-gradient(0deg,rgba(0,0,0,.75),rgba(0,0,0,0));font-weight:500}
+#fa .foot{display:flex;align-items:center;gap:28px;opacity:0;transform:translateY(16px);transition:opacity .8s,transform .8s}
+#fa .foot.on{opacity:1;transform:none}
+#fa .falogo{flex:none;background:var(--accent);padding:14px 22px;font-weight:500;font-size:1.3rem;letter-spacing:-.02em;white-space:nowrap}
+#fa .falogo img{display:block;max-height:56px}
+#fa .foot p{margin:0;max-width:34em;font-size:1rem;color:rgba(255,255,255,.85)}
+@media(max-width:760px){#fa .tiles{flex-direction:column;height:60vh}#fa .foot{flex-direction:column;align-items:flex-start;gap:12px}}
+/* video */
+#vidBox{position:absolute;right:20px;bottom:20px;width:min(16%,200px);z-index:7;opacity:0;pointer-events:none;transition:opacity .4s;background:#000;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+#vidBox.show{opacity:1;pointer-events:auto}
+#vidBox video{display:block;width:100%}
+
+/* ===== LEGAL SCENE: Geneva (left) and Rome Statute (right) ===== */
+#law{position:absolute;inset:0;z-index:4;background:#000;display:grid;grid-template-columns:1fr 1fr;opacity:0;pointer-events:none;transition:opacity .7s}
+#law.show{opacity:1}
+#law .col{padding:7vh 4vw;display:flex;flex-direction:column;justify-content:center;transition:opacity .6s}
+#rome{border-left:1px solid var(--accent)}
+#law .k{color:var(--accent);margin:0 0 22px}
+#law .row{display:flex;gap:3vw;align-items:center}
+.page{position:relative;height:min(62vh,620px);aspect-ratio:.72;flex:none;transition:opacity .6s}
+.pg{position:absolute;inset:0;opacity:0;transition:opacity .7s;background:#f2efe8 var(--img) center/contain no-repeat;box-shadow:0 0 0 1px rgba(255,255,255,.2)}
+#law[data-hl="a18"] #p13,#law[data-hl="a19"] #p14,#law[data-hl^="r"] #p14{opacity:1}
+.ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#6b6659;padding:16px}
+.pg.ok .ph{display:none}
+.hl{position:absolute;left:var(--x);top:var(--y);width:var(--w);height:var(--h);background:rgba(229,83,61,.4);mix-blend-mode:multiply;transform:scaleX(0);transform-origin:left;transition:transform 1s .2s}
+#law[data-hl="a18"] #p13 .hl,#law[data-hl="a19"] #p14 .hl,#law[data-hl^="r"] #p14 .hl{transform:scaleX(1)}
+#law[data-hl^="r"] .page{opacity:.35}
+.kt{margin:0 0 .5em;font-weight:600;font-size:clamp(1.8rem,3.4vw,3.2rem);line-height:1.1;opacity:.22;letter-spacing:.03em;transition:opacity .6s,letter-spacing .8s}
+.kt.on{opacity:1;letter-spacing:-.025em}
+.kt .hlt{background:linear-gradient(var(--accent),var(--accent)) no-repeat 0 92%/0% 40%;transition:background-size .9s .1s}
+.kt.on .hlt{background-size:100% 40%}
+.kt small{display:block;margin-top:.3em;font-size:.42em;font-weight:400;letter-spacing:0;color:rgba(255,255,255,.8)}
+#lq{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:0 8vw;opacity:0;transition:opacity .7s}
+#lq .qt{margin:0;max-width:22em;font-weight:600;font-size:clamp(1.6rem,3.6vw,3.2rem);line-height:1.12;letter-spacing:-.03em}
+#law[data-hl="q"] .col{opacity:0}
+#law[data-hl="q"] #lq{opacity:1}
+/* ===== MISSING SCENE: three images with credits ===== */
+#ms{position:absolute;inset:0;z-index:4;background:#000;display:flex;flex-direction:column;justify-content:center;gap:2.5vh;padding:6vh 4vw;opacity:0;pointer-events:none;transition:opacity .7s}
+#ms.show{opacity:1}
+#ms .mtiles{display:flex;gap:14px;height:62vh}
+#ms .mt{flex:1;margin:0;display:flex;flex-direction:column;opacity:0;transform:translateY(24px);transition:opacity .8s,transform .8s}
+#ms .mt.on{opacity:1;transform:none}
+#ms .mi{flex:1;min-height:0;background:#10161b var(--img) center/cover no-repeat}
+#ms figcaption{padding-top:8px;color:rgba(255,255,255,.7);font:400 .7rem/1.3 "JetBrains Mono",Consolas,monospace}
+#ms .mtiles{transition:height .8s}
+#ms.small{justify-content:flex-start;padding-top:4vh}
+#ms.small .mtiles{height:53vh}
+.cap.miss{left:24px;right:24px;max-width:none;bottom:40px}
+.cap.miss .it{columns:2;column-gap:32px}
+.cap.miss .it li{break-inside:avoid}
+@media(max-width:760px){#ms .mtiles{flex-direction:column;height:72vh}#ms.small .mtiles{height:34vh}.cap.miss .it{columns:1}}
+@media(max-width:760px){#credit{white-space:normal;max-width:calc(100% - 24px)}
+  .cap{left:12px;right:12px;max-width:none;bottom:34px}
+  .cap.mid,.cap.bot{left:50%;right:auto}
+  #credit{left:12px}
+  #law{grid-template-columns:1fr}
+  #law .col{padding:3vh 5vw;justify-content:flex-start}
+  #rome{border-left:0;border-top:1px solid var(--accent)}
+  .page{height:30vh}
+  #cover .pic{height:50vh}
+}
+@media(prefers-reduced-motion:reduce){.layer,.cap,.it li,.kt,.hl,#law{transition:none}}
+</style>
+</head>
+<body>
+
+<!-- ===== COVER ===== -->
+<header id="cover">
+  <div class="top mono"><span>©2026</span></div>
+  <div class="hero">
+    <h1><span class="t1">War From Above:</span><span class="t2">Satellite Imagery and Civilian Harm</span></h1>
+    <div class="row">
+      <p class="q">How has satellite imagery transformed what can be seen, known and proved about civilian harm in war?</p>
+      <a class="begin" href="#story">Scroll to begin &darr;</a>
+    </div>
+  </div>
+  <div class="pic" role="img" aria-label="Cover image"></div>
+</header>
+
+<div id="story">
+  <div id="stage">
+    <div id="views"></div>
+
+    <div id="cmp">
+      <div id="cmpClip"></div>
+      <div id="cmpLine"></div>
+      <span class="ctag" id="tagA" style="left:14px"></span>
+      <span class="ctag hid" id="tagB" style="right:14px"></span>
+      <span class="ctag" id="tagH">Drag to compare</span>
+      <div id="cmpHandle" role="slider" tabindex="0" aria-label="Before and after slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">&#8596;</div>
+    </div>
+
+    <div id="scrim"></div>
+
+    <!-- legal scene: edit the highlight positions (--x --y --w --h) to sit on Article 18 and 19 in your screenshots -->
+    <div id="law" data-hl="">
+      <div class="col" id="geneva">
+        <p class="mono k">Fourth Geneva Convention</p>
+        <div class="row">
+          <div class="page">
+            <div class="pg" id="p13" style="--img:url(images/geneva-p13.png)"><i class="hl" style="--x:20%;--y:56%;--w:72%;--h:15%"></i><span class="ph mono">Page 13<br>images/geneva-p13.png</span></div>
+<div class="pg" id="p14" style="--img:url(images/geneva-p14.png)"><i class="hl" style="--x:4%;--y:12%;--w:76%;--h:15%"></i><span class="ph mono">Page 14<br>images/geneva-p14.png</span></div>
+          </div>
+          <div>
+            <h3 class="kt" id="t18"><span class="hlt">Article 18</span></h3>
+            <h3 class="kt" id="t19"><span class="hlt">Article 19</span></h3>
+          </div>
+        </div>
+      </div>
+      <div class="col" id="rome">
+        <p class="mono k">Rome Statute</p>
+        <h3 class="kt" id="r1"><span class="hlt">Article 8(2)(b)(ix)</span><small>for international armed conflicts</small></h3>
+        <h3 class="kt" id="r2"><span class="hlt">Article 8(2)(e)(iv)</span><small>for non-international armed conflicts</small></h3>
+      </div>
+      <div id="lq"><p class="mono k">Unresolved legal question:</p><p class="qt">Which legal framework applies to the events in Gaza: international or non-international armed conflict?</p></div>
+    </div>
+<div id="fa">
+  <div class="tiles">
+    <div class="tile" data-k="t1" style="--img:url(images/fa-reconstruction.jpg)"><b class="mono">Digital Reconstruction</b></div>
+    <div class="tile" data-k="t2" style="--img:url(images/fa-map.jpg)"><b class="mono">Mapping</b></div>
+    <div class="tile" data-k="t3" style="--img:url(images/fa-3d.avif)"><b class="mono">3D modelling</b></div>
+  </div>
+  <div class="foot" data-k="logo">
+    <div class="falogo"><img src="images/fa-logo.png" alt="Forensic Architecture" onerror="this.style.display='none'" onload="this.nextElementSibling.style.display='none'"><span>Forensic Architecture</span></div>
+    <p>Beyond annotating satellite images, Forensic Architecture uses spatial analysis and digital modelling to reconstruct incidents of state violence and human rights violations.</p>
+  </div>
+</div>
+<div id="ms">
+  <div class="mtiles">
+    <figure class="mt" data-k="m1">
+      <div class="mi" style="--img:url(images/missing-1.jpg)"></div>
+      <figcaption>REUTERS/Dawoud Abu Alkas</figcaption>
+    </figure>
+    <figure class="mt" data-k="m2">
+      <div class="mi" style="--img:url(images/missing-2.jpg)"></div>
+      <figcaption>Forensic Architecture/Anadolu</figcaption>
+    </figure>
+    <figure class="mt" data-k="m3">
+      <div class="mi" style="--img:url(images/missing-3.jpeg)"></div>
+      <figcaption>The Economist/Getty Images</figcaption>
+    </figure>
+  </div>
+</div>
+    <div id="vidBox"><video id="vid" src="images/investigator.mp4" controls playsinline preload="auto"></video></div>
+
+    <div class="cap bl" id="cap" hidden>
+      <p id="cPart" class="mono"></p>
+      <h2 id="cTitle"></h2>
+      <div id="cBody"></div>
+    </div>
+    <p id="credit"></p>
+    <div id="bar"></div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   1. YOUR IMAGES (file names in the images folder)
+   ===================================================================== */
+const IMAGES = {
+  raw:       { src: 'images/raw.jpeg',    fb: '#0e1419', fit: 'contain' },   // Google Maps screenshot of Al-Shifa, 14 October 2026
+  before:    { src: 'images/before.png', fb: '#5d7050', fit: 'contain' },   // Al-Shifa before the damage
+  after:     { src: 'images/after.png',  fb: '#3a3a36' },   // Al-Shifa after the damage
+  law:       { src: 'images/law.jpeg', fb: '#0e1419' },
+  // Forensic Architecture figures. fit:'contain' shows the whole image so no annotation is cropped.
+  // These load from the FA website. For the final version, download them into /images and change the paths.
+  annotated: { src: 'https://content.forensic-architecture.org/wp-content/uploads/2024/05/Figure_0-2400x1732.png', fb: '#0e1419', fit: 'contain' },
+  angle:     { src: 'https://content.forensic-architecture.org/wp-content/uploads/2024/05/Figure_5-2400x1301.png', fb: '#0e1419', fit: 'contain' }
+  ,
+  // new backgrounds: add these files to /images when you have them
+  proof:     { src: 'images/proof.jpg',   fb: '#10161b' },   // "What can this prove?" (ground-level images of destruction)
+};
+
+/* =====================================================================
+   2. YOUR STORY: one block per scroll step. Edit only the text in quotes.
+   title / part / body : the words shown (all optional; no title = no text box)
+   pos     : 'mid' = big centred text, 'bot' = big text at the bottom, otherwise a small box bottom left
+   img     : which image is behind
+   fx fy z : where the camera looks (0-100) and zoom. Only used on images that fill the screen.
+   compare : true = before/after slider (before = first image, after = hidden until dragged)
+   items,k : a list whose points appear one at a time; k = how many are showing
+   scene   : 'law' = the Geneva / Rome Statute scene; hl = which part is lit; on = which titles are lit
+   video   : true = the investigator video plays on this step
+   credit  : small source line bottom left
+   ===================================================================== */
+const STEPS = [
+  // the image speaks for itself: no text
+  { img:'raw', fx:50, fy:50, z:1, credit:'Satellite image © Maxar Technologies' },
+
+  { part:'Case Study:', title:'Al-Shifa Hospital, Gaza Strip',
+    body:`<p>How do we analyse a satellite image of a conflict zone?</p>`,
+    compare:true, labels:['Before October 22, 2023','After March 27, 2024'],
+    img:'before', fx:50, fy:50, z:1, credit:'Satellite image © Maxar Technologies • Captured between October 22, 2023 and March 27, 2024' },
+  { fa:['t1'],                  img:'after', fx:50, fy:50, z:1, credit:'Images: Forensic Architecture' },
+  { fa:['t1','t2'],             img:'after', fx:50, fy:50, z:1, credit:'Images: Forensic Architecture' },
+  { fa:['t1','t2','t3'],        img:'after', fx:50, fy:50, z:1, credit:'Images: Forensic Architecture' },
+  { fa:['t1','t2','t3','logo'], img:'after', fx:50, fy:50, z:1, credit:'Images: Forensic Architecture' },
+  
+
+  { title:'Satellite image of Al-Shifa Hospital, Gaza Strip',
+    img:'raw', fx:50, fy:50, z:1, credit:'Satellite image © Maxar Technologies' },
+
+  { title:"Annotated Image by Forensic Architecture: Investigator's Description",
+    video:true, img:'annotated', fx:50, fy:50, z:1, credit:'Forensic Architecture. Satellite image © Maxar Technologies' },
+
+  { title:'Ground Photos of the Al-Shifa Hospital',
+    video:true, img:'angle', fx:50, fy:50, z:1, credit:'Forensic Architecture/Mahmoud Abusalama' },
+
+  { title:'When does an attack on a hospital constitute a war crime?', pos:'mid',
+    img:'law', fx:50, fy:50, z:1.05, credit:'REUTERS/Doaa Rouqa' },
+
+  // the law: Geneva Conventions (left) and Rome Statute (right)
+  { scene:'law', hl:'a18', on:['t18'],               img:'law', fx:50, fy:50, z:1.05 },
+  { scene:'law', hl:'a19', on:['t18','t19'],         img:'law', fx:50, fy:50, z:1.05 },
+  { scene:'law', hl:'r1',  on:['t18','t19','r1'],    img:'law', fx:50, fy:50, z:1.05 },
+  { scene:'law', hl:'r2',  on:['t18','t19','r1','r2'], img:'law', fx:50, fy:50, z:1.05 },
+  { scene:'law', hl:'q',   on:[],                    img:'law', fx:50, fy:50, z:1.05 },
+
+  { title:'What can this prove?', pos:'mid', img:'proof', fx:50, fy:50, z:1.05 },
+
+    // what is missing: three images appear one by one, then the points
+  { ms:['m1'],             img:'proof', fx:50, fy:50, z:1.05 },
+  { ms:['m1','m2'],        img:'proof', fx:50, fy:50, z:1.05 },
+  { ms:['m1','m2','m3'],   img:'proof', fx:50, fy:50, z:1.05 },
+    ...[1,2,3,4].map(k=>({ grp:'miss', ms:['m1','m2','m3'], msSmall:true, title:'And what is missing?', k,
+    items:[
+      '<b>Ground photos/video:</b> show damage invisible from above, such as walls and interiors.',
+      '<b>Witness testimony:</b> gives events, people and context.',
+      '<b>Munition/shrapnel analysis:</b> identifies the weapon type and source.',
+      '<b>Communications/operational evidence:</b> reveals intent, knowledge and decision-making.'],
+    img:'proof', fx:50, fy:50, z:1.05 })),
+
+  // the closing question appears as you scroll
+  ...[1,2,3].map(k=>({ grp:'fin', pos:'bot', k,
+    items:['What can you see now,','what can you know,','and what can you prove?'],
+    img:'raw', fx:50, fy:50, z:1, credit:'Satellite image © Maxar Technologies' }))
+];
+
+/* =====================================================================
+   3. SCROLL LENGTH PER STEP (in screen heights). Larger = slower.
+   FRAME_MARGIN: gap around an image shown whole. CROP_LIMIT: how much cropping is
+   acceptable before the whole image is shown instead (0.14 = 14%).
+   ===================================================================== */
+const STEP_HEIGHT_VH = 110, FRAME_MARGIN = 0.035, CROP_LIMIT = 0.14;
+
+/* ======================= code below: no need to edit ======================= */
+const $ = id => document.getElementById(id);
+const story=$('story'), stage=$('stage'), cap=$('cap'), cmp=$('cmp');
+const n = STEPS.length;
+story.style.height = ((n-1)*STEP_HEIGHT_VH + 100) + 'vh';
+
+const bgfx = src => `url(${src}), repeating-linear-gradient(0deg,rgba(255,255,255,.06) 0 1px,transparent 1px 60px), repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,transparent 1px 60px)`;
+const layers = {};
+Object.entries(IMAGES).forEach(([k,v])=>{
+  const d=document.createElement('div'); d.className='layer';
+  d.style.backgroundImage=bgfx(v.src); d.style.backgroundColor=v.fb;
+  $('views').appendChild(d); layers[k]=d;
+  const im=new Image(); im.onload=()=>{d._ar=im.naturalWidth/im.naturalHeight; fitAll()}; im.src=v.src;
+});
+// the "after" image for the slider
+const cmpLayer=document.createElement('div'); cmpLayer.className='layer on';
+cmpLayer.style.backgroundImage=bgfx(IMAGES.after.src); cmpLayer.style.backgroundColor=IMAGES.after.fb;
+$('cmpClip').appendChild(cmpLayer);
+
+// fill the screen when the crop is small; otherwise show the whole image with a thin red line
+function fit(L){
+  const W=innerWidth, H=innerHeight; let r={l:0,t:0,w:W,h:H}, framed=false;
+  if(L._ar){
+    const vr=W/H, crop=1-Math.min(L._ar/vr, vr/L._ar);
+    if(crop>CROP_LIMIT){
+      const m=H*FRAME_MARGIN, w=Math.min(W-2*m,(H-2*m)*L._ar), h=w/L._ar;
+      r={l:(W-w)/2,t:(H-h)/2,w,h}; framed=true;
+    }
+  }
+  Object.assign(L.style,{left:r.l+'px',top:r.t+'px',width:r.w+'px',height:r.h+'px',backgroundSize:framed?'100% 100%':'cover'});
+  L.classList.toggle('framed',framed); L._framed=framed; L._r=r;
+}
+function fitAll(){
+  Object.values(layers).forEach(fit);
+  const b=layers.before, r=b._r;  // the slider sits exactly on the "before" image
+  Object.assign(cmp.style,{left:r.l+'px',top:r.t+'px',width:r.w+'px',height:r.h+'px'});
+  cmpLayer.style.backgroundSize=b._framed?'100% 100%':'cover';
+}
+
+const lerp=(a,b,t)=>a+(b-a)*t, ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+let shown=-1, tm, vidOn=false, curGrp=null;
+
+function setItems(s){ document.querySelectorAll('#cBody li').forEach((li,j)=>li.classList.toggle('on',j<(s.k||0))) }
+
+function render(i){
+  const s=STEPS[i];
+  $('credit').innerHTML=s.credit||'';
+  // video
+  const vd=$('vid'), on=!!s.video;
+  $('vidBox').classList.toggle('show',on);
+  if(on&&!vidOn){vd.play().catch(()=>{vd.muted=true;vd.play().catch(()=>{})})}
+  if(!on&&vidOn){vd.pause()}
+  vidOn=on;
+  // slider: starts showing only the "before" image
+  $('cmp').classList.toggle('show',!!s.compare);
+  if(s.compare){
+    $('tagA').textContent=(s.labels||[])[0]||'Before'; $('tagB').textContent=(s.labels||[])[1]||'After';
+    setP(100); $('tagB').classList.add('hid'); $('tagH').classList.remove('hid');
+  }
+  // legal scene
+  $('law').classList.toggle('show',s.scene==='law'); $('law').dataset.hl=s.hl||'';
+    $('fa').classList.toggle('show',!!s.fa);
+  document.querySelectorAll('#fa [data-k]').forEach(e=>e.classList.toggle('on',(s.fa||[]).includes(e.dataset.k)));
+    $('ms').classList.toggle('show',!!s.ms);
+      $('ms').classList.toggle('small',!!s.msSmall);
+  document.querySelectorAll('#ms [data-k]').forEach(e=>e.classList.toggle('on',(s.ms||[]).includes(e.dataset.k)));
+  document.querySelectorAll('#law .kt').forEach(e=>e.classList.toggle('on',(s.on||[]).includes(e.id)));
+  // darkening behind big text
+  $('scrim').className=(s.pos==='mid'||s.pos==='bot')?s.pos:'';
+  // caption
+  if(s.grp&&s.grp===curGrp){ setItems(s); return }
+  curGrp=s.grp||null;
+  const has=!!(s.title||s.body||s.items);
+  cap.hidden=!has;
+   cap.className='cap '+(s.pos||'bl')+(s.items&&!s.pos?' wide':'')+(s.msSmall?' miss':'');
+  $('cPart').textContent=s.part||''; $('cPart').hidden=!s.part;
+  $('cTitle').textContent=s.title||''; $('cTitle').hidden=!s.title;
+  $('cBody').innerHTML=(s.body||'')+(s.items?`<ol class="it">${s.items.map(t=>`<li>${t}</li>`).join('')}</ol>`:'');
+  setItems(s);
+}
+function swap(i){
+  const same=shown>=0&&STEPS[i].grp&&STEPS[i].grp===STEPS[shown].grp;
+  shown=i; clearTimeout(tm);
+  if(same){render(i);return}
+  cap.classList.add('out');
+  tm=setTimeout(()=>{render(i);cap.classList.remove('out')},180);
+}
+
+function update(){
+  const total=story.offsetHeight-innerHeight;
+  const p=Math.min(1,Math.max(0,-story.getBoundingClientRect().top/total));
+  const pos=p*(n-1), s=Math.min(n-2,Math.floor(pos)), f=pos-s;
+  const a=STEPS[s], b=STEPS[s+1];
+  // 1) the image moves first...
+  const t=ease(Math.min(f/0.5,1));
+  const fx=lerp(a.fx,b.fx,t), fy=lerp(a.fy,b.fy,t), z=lerp(a.z,b.z,t);
+  Object.values(layers).forEach(L=>{
+    if(L._framed){L.style.transform='none';return}
+    L.style.transformOrigin=`${fx}% ${fy}%`;
+    L.style.transform=`translate(${50-fx}%,${50-fy}%) scale(${z})`;
+  });
+  const key = f>0.1 ? b.img : a.img;
+  $('cmp').classList.toggle('show', !!(f>0.1 ? b : a).compare);
+  Object.entries(layers).forEach(([k,L])=>L.classList.toggle('on',k===key));
+  // 2) ...then the words
+  const ti = f>=0.55 ? s+1 : s;
+  if(ti!==shown) swap(ti);
+  $('bar').style.width=(p*100)+'%';
+}
+
+// slider: drag the handle, or use the arrow keys when it is focused
+const handle=$('cmpHandle');
+function setP(v,user){
+  v=Math.min(100,Math.max(0,v)); cmp.style.setProperty('--p',v+'%'); handle.setAttribute('aria-valuenow',Math.round(v));
+  if(user){ $('tagB').classList.remove('hid'); $('tagH').classList.add('hid') }
+}
+handle.addEventListener('pointerdown',e=>{handle.setPointerCapture(e.pointerId);e.preventDefault()});
+handle.addEventListener('pointermove',e=>{if(handle.hasPointerCapture(e.pointerId))setP((e.clientX-cmp.getBoundingClientRect().left)/cmp.offsetWidth*100,true)});
+handle.addEventListener('keydown',e=>{
+  const cur=parseFloat(handle.getAttribute('aria-valuenow'));
+  if(e.key==='ArrowLeft'){setP(cur-5,true);e.preventDefault()}
+  if(e.key==='ArrowRight'){setP(cur+5,true);e.preventDefault()}
+});
+
+// Geneva page screenshots: hide the placeholder text once the picture exists
+['p13','p14'].forEach(id=>{
+  const el=$(id), u=getComputedStyle(el).getPropertyValue('--img').replace(/^\s*url\(["']?|["']?\)\s*$/g,'');
+  const im=new Image(); im.onload=()=>el.classList.add('ok'); im.src=u;
+});
+
+fitAll(); render(0); shown=0; layers[STEPS[0].img].classList.add('on');
+addEventListener('scroll',()=>requestAnimationFrame(update),{passive:true});
+addEventListener('resize',()=>{fitAll();update()});
+update();
+</script>
+</body>
+</html>
